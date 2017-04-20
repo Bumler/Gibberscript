@@ -8,7 +8,7 @@ public class Main {
 //		  System.out.println(checkIfTagged(lib));
 //		  lib.displayData();
 		  
-		  Gibberscript gs = new Gibberscript ("dream.txt", lib);
+		  Gibberscript gs = new Gibberscript ("toConvert.txt", lib);
 //		  System.out.println(checkIfTagged(gs));
 		  gs.displayData();
 
