@@ -1,21 +1,90 @@
 package Capstone;
 
-import java.io.FileNotFoundException;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map.Entry;
 
 import edu.stanford.nlp.ling.TaggedWord;
 
 public class Gibberscript extends Tagger{
+	HashMap<String, String> file_cipher;
 	HashMap<String, String> cipher;
 	List<List<TaggedWord>> GScript;
 	
-	public Gibberscript(String fileName, POSLibrary lib) throws FileNotFoundException{
+	String CIPHER_TXT = "cipher.txt";
+	
+	public Gibberscript(String fileName, POSLibrary lib) throws IOException{
+		//reads the cipher in from a file
+		file_cipher = new HashMap<String, String>();
+		readCipher();
+		
+		//we will store new translations into a new cipher
 		cipher = new HashMap<String, String>();
 		
+		//tags the inputed text and then converts it
 		List<List<TaggedWord>> tagged = tagFile(fileName);
 		GScript = convert(tagged, lib);
+		
+		//finally writes any new ciphers to the file
+		writeCipher();
+		
+		//makes it prettier
 		GScript = clean(GScript);
+	}
+	
+	private void readCipher(){
+		BufferedReader reader = null;
+		try{
+			File file = new File(CIPHER_TXT);
+			reader = new BufferedReader(new FileReader(file)); 
+			
+			String line;
+			while ((line = reader.readLine()) != null){
+				String[] words = line.split(" ");
+				file_cipher.put(words[0], words[1]);
+			}
+			
+			reader.close();
+			
+		} catch (IOException e){
+			
+		}
+	}
+	
+	private void writeCipher() throws IOException{
+		if(cipher.size() != 0){
+			System.out.println("check");
+			File f = new File(CIPHER_TXT);
+			
+			if(f.exists()){
+				System.out.println("F Exists");
+				try (BufferedWriter bw = new BufferedWriter(new FileWriter(CIPHER_TXT, true))){
+				    for (Entry<String, String> entry: cipher.entrySet()) {
+				    	System.out.println(entry.getKey() + " " + entry.getValue());
+				        bw.write(entry.getKey()+" ");
+				        bw.write(entry.getValue());
+				        bw.newLine();
+				    }
+				}
+			}
+			else{
+				System.out.println("F Does Not Exist");
+				try (BufferedWriter bw = new BufferedWriter(new FileWriter(CIPHER_TXT))){
+				    for (Entry<String, String> entry: cipher.entrySet()) {
+				    	System.out.println(entry.getKey() + " " + entry.getValue());
+				        bw.write(entry.getKey()+" ");
+				        bw.write(entry.getValue());
+				        bw.newLine();
+				    }
+				}
+			}
+		}
 	}
 	
 	private List<List<TaggedWord>> convert (List<List<TaggedWord>> tagged, POSLibrary lib) {
@@ -37,20 +106,25 @@ public class Gibberscript extends Tagger{
 				else if(tw.tag().equals("NNP")){
 					convert = tw.value();
 				}
-				//finally checks to see if the value has already been encoded in our cipher
-				//if it hasn't it grabs a key at random
-				else if (!cipher.containsKey(tw.value())){
+				
+				//checks both our ciphers for the word
+				else if(file_cipher.containsKey(tw.value())){
+					convert = file_cipher.get(tw.value());
+				}
+				else if(cipher.containsKey(tw.value())){
+					convert = cipher.get(tw.value());
+				}
+				
+				//finally if neither cipher has it it creates a value and adds it to the new cipher
+				else{
 					int randy = (int) (Math.random() * lib.size(tw.tag()));
 					convert = lib.getString(tw.tag(), randy);
 					lib.remove(tw.tag(), randy);
+					
+					//puts this value into the cipher using the encoded word as the key
+					cipher.put(tw.value(), convert);
 				}
-				//if it has it just uses the previously made key
-				else{
-					convert = cipher.get(tw.value());
-				}
-				//puts this value into the cipher using the encoded word as the key
-				//at this point we dont care about the PoS of the word
-				cipher.put(tw.value(), convert);
+
 				//changes the word to its conversion
 				tw.setValue(convert);
 			}

@@ -52,8 +52,6 @@ public class POSLibrary extends Tagger{
 				for (int i = 1; i < words.length; i++){
 					lib.get(words[0]).add(words[i]);
 				}
-				
-//				System.out.println(line);
 			}
 			
 			reader.close();
